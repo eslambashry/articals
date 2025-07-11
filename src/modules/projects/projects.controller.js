@@ -1,11 +1,12 @@
 
 import { customAlphabet } from 'nanoid'
 import imagekit, { destroyImage } from "../../utilities/imagekitConfigration.js";
+import { projectModel } from '../../DB/models/project.js';
 const nanoid = customAlphabet('1234567890abcdefghijklmnopqrstuvwxyz', 5)
 
 
 
-export const createService = async(req,res,next) => {
+export const createProject = async(req,res,next) => {
   try {
  
    const { title, description } = req.body
@@ -33,85 +34,85 @@ export const createService = async(req,res,next) => {
     }
      
          
-        const serviceObject = {
+        const projectObject = { 
           title,
           description,
           customId,
           Image: uploadedImages
         };
-        console.log(serviceObject);
-        const service = await serviceModel.create(serviceObject);
+        console.log(projectObject);
+        const project = await projectModel.create(projectObject);
    
-        if (!service) {
-           await destroyImage(service.Image.public_id);
+        if (!project) {
+           await destroyImage(project.Image.public_id);
            return next(new Error('Try again later, failed to add', { cause: 400 }));
         }
     
-        res.status(200).json({ message: 'service added successfully', service });
+        res.status(200).json({ message: 'project added successfully', project });
       } catch (error) {
         next(new Error(`Failed to upload image: ${error.message}`, { cause: 500 }));
       }
 
 }
 
-// READ All services
-export const getAllServices = async (req, res, next) => {
+// READ All projects
+export const getAllProjects = async (req, res, next) => {
     try {
-        const services = await serviceModel.find(); // Fetch all services
+        const projects = await projectModel.find(); // Fetch all projects
 
-        if (!services.length) {
-            return next(new Error('No services found', { cause: 404 }));
+        if (!projects.length) {
+            return next(new Error('No projects found', { cause: 404 }));
         }
 
-        res.status(200).json({ message: 'services fetched successfully', services });
+        res.status(200).json({ message: 'projects fetched successfully', projects });
     } catch (error) {
-        next(new Error(`Failed to fetch services: ${error.message}`, { cause: 500 }));
+        next(new Error(`Failed to fetch projects: ${error.message}`, { cause: 500 }));
     }
 };
 
-// READ Single service
-export const getServiceById = async (req, res, next) => {
+// READ Single project
+export const getProjectById = async (req, res, next) => {
     try {
-        const serviceId  = req.params.id; // Assuming you're passing _id from MongoDB
+        const projectId  = req.params.id; // Assuming you're passing _id from MongoDB
       
         // If you want to use customId for retrieval instead:
         // const { customId } = req.params;
-        // const service = await serviceModel.findOne({ customId });
+        // const project = await projectModel.findOne({ customId });
 
-        const service = await serviceModel.findById(serviceId);
+        const project = await projectModel.findById(projectId);
 
-        if (!service) {
-            return next(new Error('service not found', { cause: 404 }));
+        if (!project) {
+            return next(new Error('project not found', { cause: 404 }));
         }
 
-        res.status(200).json({ message: 'service fetched successfully', service });
+        res.status(200).json({ message: 'project fetched successfully', project });
     } catch (error) {
-        // Handle CastError if serviceId is not a valid MongoDB ObjectId
+        // Handle CastError if projectId is not a valid MongoDB ObjectId
         if (error.name === 'CastError') {
-            return next(new Error('Invalid service ID format', { cause: 400 }));
+            return next(new Error('Invalid project ID format', { cause: 400 }));
         }
-        next(new Error(`Failed to fetch service: ${error.message}`, { cause: 500 }));
+        next(new Error(`Failed to fetch project: ${error.message}`, { cause: 500 }));
     }
 };
 
-// UPDATE service
-export const updateService = async (req, res, next) => {
+// UPDATE project
+export const updateProject = async (req, res, next) => {
     try {
-        const  serviceId  = req.params.id;
+        const  projectId  = req.params.id;
         const { title, description } = req.body;
       
-        // Find the service first to check if it exists and to get old images if any
-        const service = await serviceModel.findById(serviceId);
-        if (!service) {
-            return next(new Error('service not found', { cause: 404 }));
+        // Find the project first to check if it exists and to get old images if any
+        const project = await projectModel.findById(projectId);
+        if (!project) {
+            return next(new Error('project not found', { cause: 404 }));
         }
 
-        let updatedImages = service.Image || []; // Start with existing images
-
+        
         // Handle new image uploads (if any)
         if (req.files && req.files.length > 0) {
-            // First, delete old images associated with the service from ImageKit
-            for (const img of service.Image) {
+            let updatedImages = project.Image || []; // Start with existing images
+            // First, delete old images associated with the project from ImageKit
+            for (const img of project.Image) {
                 await destroyImage(img.public_id);
             }
             updatedImages = []; // Clear old images for replacement
@@ -121,66 +122,74 @@ export const updateService = async (req, res, next) => {
                 const uploadResult = await imagekit.upload({
                     file: file.buffer,
                     fileName: file.originalname,
-                    folder: `${process.env.PROJECT_FOLDER}/Projects/${service.customId}`, // Use existing customId
+                    folder: `${process.env.PROJECT_FOLDER}/Projects/${project.customId}`, // Use existing customId
                 });
                 updatedImages.push({
                     secure_url: uploadResult.url,
                     public_id: uploadResult.fileId,
                 });
             }
-        }
-
-        // Prepare fields to update
-        const updateFields = {
+                    // Prepare fields to update
+        var updateFields = {
             ...(title && { title }), // Only add title if provided
             ...(description && { description }), // Only add description if provided
             Image: updatedImages // Always update image array (could be empty if no new images)
         };
+        }
 
-        const updatedservice = await serviceModel.findByIdAndUpdate(
-            serviceId,
+
+        else{
+                    // Prepare fields to update
+        var updateFields = {
+            ...(title && { title }), // Only add title if provided
+            ...(description && { description }), // Only add description if provided
+         };
+        }
+
+        const updatedproject = await projectModel.findByIdAndUpdate(
+            projectId,
             updateFields,
             { new: true } // Return the updated document
         );
 
-        if (!updatedservice) {
-            // This case should ideally not be hit if `service` was found earlier,
+        if (!updatedproject) {
+            // This case should ideally not be hit if `project` was found earlier,
             // but good for robust error handling.
-            return next(new Error('Failed to update service, please try again', { cause: 500 }));
+            return next(new Error('Failed to update project, please try again', { cause: 500 }));
         }
 
-        res.status(200).json({ message: 'service updated successfully', service: updatedservice });
+        res.status(200).json({ message: 'project updated successfully', project: updatedproject });
     } catch (error) {
         if (error.name === 'CastError') {
-            return next(new Error('Invalid service ID format', { cause: 400 }));
+            return next(new Error('Invalid project ID format', { cause: 400 }));
         }
-        next(new Error(`Failed to update service: ${error.message}`, { cause: 500 }));
+        next(new Error(`Failed to update project: ${error.message}`, { cause: 500 }));
     }
 };
 
-// DELETE service
-export const deleteService = async (req, res, next) => {
+// DELETE project
+export const deleteProject = async (req, res, next) => {
     try {
-        const  serviceId = req.params.id;
+        const  projectId = req.params.id;
 
-        const service = await serviceModel.findByIdAndDelete(serviceId);
+        const project = await projectModel.findByIdAndDelete(projectId);
 
-        if (!service) {
-            return next(new Error('service not found', { cause: 404 }));
+        if (!project) {
+            return next(new Error('project not found', { cause: 404 }));
         }
 
         // Delete associated images from ImageKit
-        if (service.Image && service.Image.length > 0) {
-            for (const img of service.Image) {
+        if (project.Image && project.Image.length > 0) {
+            for (const img of project.Image) {
                 await destroyImage(img.public_id);
             }
         }
 
-        res.status(200).json({ message: 'service deleted successfully' });
+        res.status(200).json({ message: 'project deleted successfully' });
     } catch (error) {
         if (error.name === 'CastError') {
-            return next(new Error('Invalid service ID format', { cause: 400 }));
+            return next(new Error('Invalid project ID format', { cause: 400 }));
         }
-        next(new Error(`Failed to delete service: ${error.message}`, { cause: 500 }));
+        next(new Error(`Failed to delete project: ${error.message}`, { cause: 500 }));
     }
 };

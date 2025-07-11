@@ -74,7 +74,8 @@ export const getAllServices = async (req, res, next) => {
 export const getServiceById = async (req, res, next) => {
     try {
         const serviceId  = req.params.id; // Assuming you're passing _id from MongoDB
-      
+        console.log(serviceId);
+        
         // If you want to use customId for retrieval instead:
         // const { customId } = req.params;
         // const service = await serviceModel.findOne({ customId });
@@ -107,10 +108,10 @@ export const updateService = async (req, res, next) => {
             return next(new Error('service not found', { cause: 404 }));
         }
 
-        let updatedImages = service.Image || []; // Start with existing images
-
+        
         // Handle new image uploads (if any)
         if (req.files && req.files.length > 0) {
+            let updatedImages = service.Image || []; // Start with existing images
             // First, delete old images associated with the service from ImageKit
             for (const img of service.Image) {
                 await destroyImage(img.public_id);
@@ -129,14 +130,20 @@ export const updateService = async (req, res, next) => {
                     public_id: uploadResult.fileId,
                 });
             }
-        }
-
-        // Prepare fields to update
-        const updateFields = {
+            var updateFields = {
             ...(title && { title }), // Only add title if provided
             ...(description && { description }), // Only add description if provided
             Image: updatedImages // Always update image array (could be empty if no new images)
         };
+        }
+
+        else{
+            // Prepare fields to update
+            var updateFields = {
+                ...(title && { title }), // Only add title if provided
+                ...(description && { description }), // Only add description if provided
+            };
+        }
 
         const updatedservice = await serviceModel.findByIdAndUpdate(
             serviceId,

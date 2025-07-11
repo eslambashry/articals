@@ -108,10 +108,10 @@ export const updateBlog = async (req, res, next) => {
             return next(new Error('Blog not found', { cause: 404 }));
         }
 
-        let updatedImages = blog.Image || []; // Start with existing images
 
         // Handle new image uploads (if any)
         if (req.files && req.files.length > 0) {
+        let updatedImages = blog.Image || []; // Start with existing images
             // First, delete old images associated with the blog from ImageKit
             for (const img of blog.Image) {
                 await destroyImage(img.public_id);
@@ -130,14 +130,21 @@ export const updateBlog = async (req, res, next) => {
                     public_id: uploadResult.fileId,
                 });
             }
-        }
-
-        // Prepare fields to update
-        const updateFields = {
+                    // Prepare fields to update
+        var updateFields = {
             ...(title && { title }), // Only add title if provided
             ...(description && { description }), // Only add description if provided
             Image: updatedImages // Always update image array (could be empty if no new images)
         };
+        }
+
+        else{
+                    // Prepare fields to update
+        var updateFields = {
+            ...(title && { title }), // Only add title if provided
+            ...(description && { description }), // Only add description if provided
+        };
+        }
 
         const updatedBlog = await blogModel.findByIdAndUpdate(
             blogId,
