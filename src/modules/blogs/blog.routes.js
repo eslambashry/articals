@@ -7,6 +7,10 @@ const blogRouter = Router()
 
 
 blogRouter.post("/create",multerCloudFunction(allowedExtensions.Image).array("image", 9),BlogCon.createBlog)
+blogRouter.get("/", BlogCon.getAllBlogs)
+blogRouter.get("/:id", BlogCon.getBlogById)
+blogRouter.put("/:id", multerCloudFunction(allowedExtensions.Image).array("image", 9), BlogCon.updateBlog)
+blogRouter.delete("/:id", BlogCon.deleteBlog)
 
 
 

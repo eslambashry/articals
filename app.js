@@ -7,6 +7,7 @@ import path from 'path'
 import { dbConnection } from './src/DB/connection.js';
 import blogRouter from './src/modules/blogs/blog.routes.js';
 import { globalResponse } from './src/utilities/errorHandeling.js';
+import serviceRoutes from './src/modules/service/service.routes.js';
 
 config({path: path.resolve('./src/config/.env')})
 const app = express()
@@ -19,7 +20,8 @@ app.use(express.json());
 dbConnection()
 
 
-app.use('blogs',blogRouter)
+app.use('/blogs',blogRouter)
+app.use('/service',serviceRoutes)
 
 app.use(globalResponse)
 
